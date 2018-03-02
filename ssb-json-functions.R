@@ -1,6 +1,5 @@
 options(encoding="UTF-8")
 
-
 library(httr)
 # rjstat is used for converting SSB JSON -> Data frame
 library(rjstat)
@@ -61,6 +60,7 @@ getJSONData <- function(tableId,queryData,naming="id") {
 
 
 # From JSON metadata table structure w/no subtable converted to dataframe by jsonlite
+# Adds column "Slct" for selection marking
 # Parameter tableId: Number SB-table
 
 getValuesAndLabels <- function(tableId) {
@@ -68,8 +68,8 @@ getValuesAndLabels <- function(tableId) {
     varNms <- mDF[[2]][[1]]  ; varLbls <- mDF[[2]][[1]] ; varNmb <- length(varNms) ;
     valAndLbl <- list()
     for (i in 1:varNmb) {
-        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i])
-        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""))
+        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i],0)
+        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""),"Slct")
         valAndLbl[[varNms[i]]] <- xdfi
     }
     valAndLbl
