@@ -8,7 +8,7 @@ library(jsonlite)
 
 #library(mosaic)
 #source("test_json_generation_1.R")
-
+source("ssb-json-functions.R")
 
 graphics.off()
 
@@ -160,21 +160,30 @@ createSearchDF <- function(metaDF){
     
  }
 
-# toJSON(fromJSON(getQueryData05375())) - Last section is wrong: ["json-stat"]
 
+createSearchDF_0 <- function(metaDF){
 
-cnvFromDF05375 <- '{"query":[{"code":"Kjonn","selection":{"filter":"all","values":["*"]}},{"code":"Alder","selection":{"filter":"all","values":["*"]}},{"code":"Tid","selection":{"filter":"all","values":["*"]}}],"response":{"format":["json-stat"]}}'
-
-# The patched version works
-
-cnvFromDFPatched05375 <- '{"query":[{"code":"Kjonn","selection":{"filter":"all","values":["*"]}},{"code":"Alder","selection":{"filter":"all","values":["*"]}},{"code":"Tid","selection":{"filter":"all","values":["*"]}}],"response":{"format":"json-stat"}}'
-
-# We therefore need to be able to add the response element separately to 
-
-
-
-#srchDF05375 <- fromJSON(getQueryData05375())
-#metaDF03013 <- fromJSON(getMetaData("03013"))
+    srchDF <- fromJSON(getQueryData05862())    
+    
+    nVar <- length(metaDF) ; nSrchVar <- 0 ;
+    for (i in 1:nVar){
+        allSlct <- metaDF[[i]][1,3]
+        if (allSlct>0) {
+            nSrchVar <-  nSrchVar + 1 ;
+            varNm <- names(metaDF[[i]])[1] ;
+            
+            srchDF[[nSrchVar]][1,1] <- varNm ;
+            srchDF[[nSrchVar]][1,2][1] <- "all" ;
+            srchDF[[nSrchVar]][1,2][2] <- "*" ;
+        }
+    }
+    
+    fjL <- list(format="json-stat")
+    srchDF$response<-fjL
+    
+    srchDF
+    
+}
 
 
 # From JSON metadata structure converted to dataframe by jsonlite
@@ -195,6 +204,24 @@ getValuesAndLabels <- function(tableId) {
      valAndLbl
     
 }
+
+
+
+# toJSON(fromJSON(getQueryData05375())) - Last section is wrong: ["json-stat"]
+
+
+cnvFromDF05375 <- '{"query":[{"code":"Kjonn","selection":{"filter":"all","values":["*"]}},{"code":"Alder","selection":{"filter":"all","values":["*"]}},{"code":"Tid","selection":{"filter":"all","values":["*"]}}],"response":{"format":["json-stat"]}}'
+
+# The patched version works
+
+cnvFromDFPatched05375 <- '{"query":[{"code":"Kjonn","selection":{"filter":"all","values":["*"]}},{"code":"Alder","selection":{"filter":"all","values":["*"]}},{"code":"Tid","selection":{"filter":"all","values":["*"]}}],"response":{"format":"json-stat"}}'
+
+# We therefore need to be able to add the response element separately to 
+
+
+
+#srchDF05375 <- fromJSON(getQueryData05375())
+#metaDF03013 <- fromJSON(getMetaData("03013"))
 
 
 
@@ -328,6 +355,14 @@ filterAndData <- function(dataF,dataFStr,condList,dataVar) {
 # condL <- c('Kjonn==2','Alder2==80')
 # condL <- c('Kjonn==|2|','Alder2==|80|')
 
+
+
+#> source("test_json_generation_1.R")
+#> md03013 <- getMetaData("03013")
+#> mdDF03013 <- fromJSON(md03013)
+#> md05375 <- getMetaData("05375")
+#> mdDF05375 <- fromJSON(md05375)
+#> 
 
 
 
