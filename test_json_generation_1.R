@@ -141,6 +141,9 @@ invertToJSON <- function(jsDFrame){
 queryFromDF <- function(df){
 
     jfJ0 <- toJSON(df)
+    jfJ0 <- gsub("\\\\","",jfJ0)
+    jfJ0 <- gsub("\\[\"\"","\\[\"",jfJ0)
+    jfJ0 <- gsub("\"\"\\]","\"\\]",jfJ0)
     jfJ0 <- gsub("\\]([^]]*)$","\\1",jfJ0)
     jfJ0 <- gsub("\\[([^[]*)$","\\1",jfJ0)
     jfJ0
@@ -161,29 +164,73 @@ createSearchDF <- function(metaDF){
  }
 
 
+patchValLabDF <- function(metaDF) {
+# Just a try, works for 05375...    
+    metaDF[[1]][1,3] <- 10 ; metaDF[[2]][1,3] <- 1 ;  metaDF[[2]][51,3] <- 1 ;  metaDF[[2]][81,3] <- 1 ;
+    metaDF[[4]][1,3] <- 10 ;
+
+    metaDF ; 
+
+}
+
+
 createSearchDF_0 <- function(metaDF){
 
-    srchDF <- fromJSON(getQueryData05862())    
-    
+    srchDF <- fromJSON(getQueryData05862())
+    srchDFq  <-  srchDF$query 
+   
     nVar <- length(metaDF) ; nSrchVar <- 0 ;
     for (i in 1:nVar){
-        allSlct <- metaDF[[i]][1,3]
-        if (allSlct>0) {
+        allSlct <- metaDF[[i]][1,3] ; nmbSlct <-  sum(metaDF[[i]][,3]) ;
+        
+        if (allSlct==10 || nmbSlct>0) {   # Variable included in search
             nSrchVar <-  nSrchVar + 1 ;
             varNm <- names(metaDF[[i]])[1] ;
-            
-            srchDF[[nSrchVar]][1,1] <- varNm ;
-            srchDF[[nSrchVar]][1,2][1] <- "all" ;
-            srchDF[[nSrchVar]][1,2][2] <- "*" ;
+            srchDFq$code[nSrchVar] <- varNm ;
         }
+        if (allSlct==10) {  # All
+            srchDFq$selection[nSrchVar,1] <- "all" ;
+            srchDFq$selection[nSrchVar,2] <- "*" ;
+        }
+        else if (nmbSlct>0) { # Some values, put them in a list
+            
+            mDi <- metaDF[[i]] ; mDiSlct <- mDi[mDi[,3]==1,1] ;
+            mDiSlct <- paste("\"",mDiSlct,"\"",sep="")
+            
+            srchDFq$selection[nSrchVar,1] <- "item" ;
+            srchDFq$selection[nSrchVar,2] <- paste(mDiSlct,collapse=",") ;
+          
+        }
+       
     }
-    
+
+    srchDF$query <- srchDFq
     fjL <- list(format="json-stat")
     srchDF$response<-fjL
     
     srchDF
     
 }
+
+
+
+createSearchFromDF <- function(pmVLDF){
+
+   sDF <- createSearchDF_0(pmVLDF)
+   queryFromDF(sDF)
+
+}
+
+
+
+testCreateSearchDF_0 <- function(){
+
+   mVLDF <- getValuesAndLabels("05375") 
+   pmVLDF <- patchValLabDF(mVLDF)
+   createSearchFromDF(pmVLDF)
+
+}
+
 
 
 # From JSON metadata structure converted to dataframe by jsonlite
@@ -363,11 +410,15 @@ filterAndData <- function(dataF,dataFStr,condList,dataVar) {
 #> md05375 <- getMetaData("05375")
 #> mdDF05375 <- fromJSON(md05375)
 #> 
+#> mdLV05375 <- getValuesAndLabels("05375")
+#> mdLV05375x <- mdLV05375
+#> mdLV05375x[[1]]
 
-
-
-
-
+#dfQ05375x <- fromJSON(getQueryData05375())
+#dfQueryPart <- dfQ05375x$query
+#dfQueryPart$selection[1,1]
+#dfQueryPart$selection[1,1] <- "none"
+#dfQueryPart$selection[1,2] <- "**"
 
 
 
