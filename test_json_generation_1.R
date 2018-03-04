@@ -61,6 +61,28 @@ getJSONData <- function(tableId,queryData,naming="id") {
 }
 
 
+
+# From JSON metadata structure converted to dataframe by jsonlite
+
+getValuesAndLabels <- function(tableId) {
+    
+    mDF <- fromJSON(getMetaData(tableId))
+    varNms <- mDF[[2]][[1]]  ; varLbls <- mDF[[2]][[1]] ; varNmb <- length(varNms) ;
+    valAndLbl <- list()
+    for (i in 1:varNmb) {
+        
+        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i],0)
+        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""),"Slct")
+        valAndLbl[[varNms[i]]] <- xdfi
+        
+    }
+    
+     valAndLbl
+    
+}
+
+
+
 #
 ############################################
 ######### Reading data       ###############
@@ -122,6 +144,59 @@ getQueryData05862 <- function() {
 }'
 }
 
+getQueryData07902 <- function() {
+'{
+  "query": [
+  {
+    "code":"Kjonn",
+     "selection": {
+    "filter": "all",
+    "values":["*"] }
+  },{
+    "code":"AlderX",
+     "selection": {
+    "filter": "all",
+    "values":["*"] }
+  },{
+    "code":"ContentsCode",
+     "selection": {
+    "filter": "all",
+    "values":["*"] }
+  },{
+    "code":"Tid",
+    "selection": {
+    "filter": "all",
+    "values":["*"] }
+   }   ],
+  "response": {
+  "format": "json-stat"
+  } 
+}'
+}
+
+getQueryData07902_0 <- function() {
+'{
+  "query": [
+    {
+      "code": "Kjonn",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "0",
+          "1",
+          "2"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat"
+  }
+}'
+}
+
+
+
 # Should ideally return input modulo whitespace etc.  Does not for response element in Statbank queries 
 
 invertFromJSON <- function(jsonDat){
@@ -151,37 +226,21 @@ queryFromDF <- function(df){
 }    
 
 
+# 
+
 createSearchDF <- function(metaDF){
 
-  srchDF <- fromJSON(getQueryData05862())  
-  mockQuery <- fromJSON(getQueryData05375())$query
-  srchDF$query <- mockQuery  
-  fjL <- list(format="json-stat")
-  srchDF$response<-fjL
-  
-  srchDF
+    srchDF <- fromJSON(getQueryData07902())
+    srchDFq  <-  srchDF$query
+    nQueryRows <- length(srchDFq$code) ;
     
- }
-
-
-patchValLabDF <- function(metaDF) {
-# Just a try, works for 05375...    
-    metaDF[[1]][1,3] <- 10 ; metaDF[[2]][1,3] <- 1 ;  metaDF[[2]][51,3] <- 1 ;  metaDF[[2]][81,3] <- 1 ;
-    metaDF[[4]][1,3] <- 10 ;
-
-    metaDF ; 
-
-}
-
-
-createSearchDF_0 <- function(metaDF){
-
-    srchDF <- fromJSON(getQueryData05862())
-    srchDFq  <-  srchDF$query 
-   
     nVar <- length(metaDF) ; nSrchVar <- 0 ;
+    
     for (i in 1:nVar){
+
+        nValues <-  length(metaDF[[i]][,3]) ;
         allSlct <- metaDF[[i]][1,3] ; nmbSlct <-  sum(metaDF[[i]][,3]) ;
+        topSlct <- metaDF[[i]][nValues,3]
         
         if (allSlct==10 || nmbSlct>0) {   # Variable included in search
             nSrchVar <-  nSrchVar + 1 ;
@@ -192,23 +251,79 @@ createSearchDF_0 <- function(metaDF){
             srchDFq$selection[nSrchVar,1] <- "all" ;
             srchDFq$selection[nSrchVar,2] <- "*" ;
         }
-        else if (nmbSlct>0) { # Some values, put them in a list
+        else if (nmbSlct>0&topSlct<2) { # Some values, put them in a list
+            
+            mDi <- metaDF[[i]] ; mDiSlct <- mDi[mDi[,3]==1,1] ;
+            mDiSlct <- paste("\"",mDiSlct,"\"",sep="")
+            srchDFq$selection[nSrchVar,1] <- "item" ;
+            srchDFq$selection[nSrchVar,2] <- paste(mDiSlct,collapse=",") ;
+         }
+        else if (topSlct>1) { # Newest topSlct values
+            srchDFq$selection[nSrchVar,1] <- "top" ;
+            srchDFq$selection[nSrchVar,2] <- as.character(topSlct) ;
+        }
+    }
+
+    srchDF$query <- srchDFq[1:nSrchVar,]
+    # print(length(srchDF$query$code))
+    fjL <- list(format="json-stat")
+    srchDF$response<-fjL
+    
+    srchDF
+     
+}
+
+
+
+# Development version of create-search function
+
+createSearchDF_0 <- function(metaDF){
+
+    srchDF <- fromJSON(getQueryData07902())
+    srchDFq  <-  srchDF$query
+    nQueryRows <- length(srchDFq$code) ;
+    
+    nVar <- length(metaDF) ; nSrchVar <- 0 ;
+    
+    for (i in 1:nVar){
+
+        nValues <-  length(metaDF[[i]][,3]) ;
+        allSlct <- metaDF[[i]][1,3] ; nmbSlct <-  sum(metaDF[[i]][,3]) ;
+        topSlct <- metaDF[[i]][nValues,3]
+        
+        if (allSlct==10 || nmbSlct>0) {   # Variable included in search
+            nSrchVar <-  nSrchVar + 1 ;
+            varNm <- names(metaDF[[i]])[1] ;
+            srchDFq$code[nSrchVar] <- varNm ;
+        }
+        if (allSlct==10) {  # All
+            srchDFq$selection[nSrchVar,1] <- "all" ;
+            srchDFq$selection[nSrchVar,2] <- "*" ;
+        }
+        else if (nmbSlct>0&topSlct<2) { # Some values, put them in a list
             
             mDi <- metaDF[[i]] ; mDiSlct <- mDi[mDi[,3]==1,1] ;
             mDiSlct <- paste("\"",mDiSlct,"\"",sep="")
             
             srchDFq$selection[nSrchVar,1] <- "item" ;
             srchDFq$selection[nSrchVar,2] <- paste(mDiSlct,collapse=",") ;
-          
+            
         }
-       
+        else if (topSlct>1) { # Newest topSlct values
+            srchDFq$selection[nSrchVar,1] <- "top" ;
+            srchDFq$selection[nSrchVar,2] <- as.character(topSlct) ;
+        }
     }
 
-    srchDF$query <- srchDFq
+    srchDF$query <- srchDFq[1:nSrchVar,]
+    # print(length(srchDF$query$code))
+    
     fjL <- list(format="json-stat")
     srchDF$response<-fjL
     
     srchDF
+    
+    
     
 }
 
@@ -222,34 +337,22 @@ createSearchFromDF <- function(pmVLDF){
 }
 
 
+patchValLabDF <- function(metaDF) {
+# Just a try, works for 05375...    
+    metaDF[[1]][1,3] <- 10 ; metaDF[[2]][1,3] <- 1 ;  metaDF[[2]][51,3] <- 1 ;  metaDF[[2]][81,3] <- 1 ;
+    metaDF[[4]][31,3] <- 8 ;
 
-testCreateSearchDF_0 <- function(){
+    metaDF ; 
+
+}
+
+
+testCreateSearchDF <- function(){
 
    mVLDF <- getValuesAndLabels("05375") 
    pmVLDF <- patchValLabDF(mVLDF)
    createSearchFromDF(pmVLDF)
 
-}
-
-
-
-# From JSON metadata structure converted to dataframe by jsonlite
-
-getValuesAndLabels <- function(tableId) {
-    
-    mDF <- fromJSON(getMetaData(tableId))
-    varNms <- mDF[[2]][[1]]  ; varLbls <- mDF[[2]][[1]] ; varNmb <- length(varNms) ;
-    valAndLbl <- list()
-    for (i in 1:varNmb) {
-        
-        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i],0)
-        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""),"Slct")
-        valAndLbl[[varNms[i]]] <- xdfi
-        
-    }
-    
-     valAndLbl
-    
 }
 
 
