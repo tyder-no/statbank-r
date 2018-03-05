@@ -228,9 +228,14 @@ getProbabilityOfDeathTable <- function(){
 }
 
 
+#survTable <- getSurvivalTable()
 
+#numDeaths <- getDeathsTable()
 #eLTTable <- getExpectedLifeTimeTable()
+#probDeath <- getProbabilityOfDeathTable()
 
+#mort2016 <- getMortalityYearsDataTable(yearsPicked=c(51))
+#mort20142016 <- getMortalityYearsDataTable(yearsPicked=c(49,50,51))
 
 
 
