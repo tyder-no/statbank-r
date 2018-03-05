@@ -86,7 +86,7 @@ pickMortalityYears <- function(mdVL,yearsPicked=c(47,48,49,50,51)){
     mdVL$Kjonn[1,3] <- 10 ; # All
     mdVL$AlderX[1,3] <- 10 ; # All
     mdVL$ContentsCode[1,3] <- 10 ; # All
-    for (i in 1:length(yearsPicked) mdVL$Tid[yearsPicked[i],3] <- 1 ; # Selected
+    for (i in 1:length(yearsPicked))  mdVL$Tid[yearsPicked[i],3] <- 1 ; # Selected
     
     mdVL
 }
@@ -101,7 +101,7 @@ getMortalityYearsData <- function(yearsPicked){
     mdVL <- pickMortalityYears(metaData,yearsPicked=yearsPicked) ;
     eQuery <- createSearchFromDF(mdVL) ;
     eData <- getJSONData("07902",eQuery)
-   # eData$ContentsCode <- NULL # Drop trivial column
+  
     eData
 }
 
@@ -110,13 +110,22 @@ getMortalityYearsData <- function(yearsPicked){
 #  Using melt&cast from reshape to transform to columns
 #
 
-transformToColumnsYearsData <- function(eData){
+transformToColumnsYearsData <- function(eData,yearsPicked){
+
     eData$expLT <- eData$value # To avoid default naming collision on "value"
     eData$value <- NULL ;  # Drop value column
-    meltYears <- melt(eData,id=c("Kjonn","AlderX","Tid")) ;
-  #  meltExpectation$expLT <- NULL ;  # Drop trivial column
-    colExp <- cast(meltYears,Kjonn+AlderX~Tid)
 
+    if (length(yearsPicked)==1) {
+        eData$Tid <- NULL # Drop trivial column
+        meltYears <- melt(eData,id=c("Kjonn","AlderX","ContentsCode")) ;
+        meltYears$expLT <- NULL ;  # Drop trivial column
+        colExp <- cast(meltYears,Kjonn+AlderX ~ContentsCode)
+    }
+    else {
+        meltYears <- melt(eData,id=c("Kjonn","AlderX","ContentsCode","Tid")) ;
+        meltYears$expLT <- NULL ;
+        colExp <- cast(meltYears,Kjonn+AlderX ~Tid+ContentsCode)
+    }
     colExp 
 }
 
@@ -126,10 +135,10 @@ transformToColumnsYearsData <- function(eData){
 # Grouped by sex in first column  
 #
 
-getMortalityDataTable <- function(contCode){
+getMortalityYearsDataTable <- function(yearsPicked=c(51)){
 
-    eData <- getMortalityData(contCode)
-    transformToColumnsData(eData)
+    eData <- getMortalityYearsData(yearsPicked)
+    transformToColumnsYearsData(eData,yearsPicked)
 
 }
 
