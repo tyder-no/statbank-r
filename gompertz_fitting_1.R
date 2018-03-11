@@ -6,6 +6,8 @@
 library(dplyr)
 library(ggplot2)
 
+source("ssb-json-functions.R")
+
 graphics.off()
 
 midpoints <- function(x) (x[-1] + x[-length(x)])/2
@@ -65,3 +67,5 @@ estimateCoeffSeries <- function(lxDF) {
     list(acoeff=acoeff,bcoeff=bcoeff)
     
 }   
+
+sT <- getSurvivalTable()
