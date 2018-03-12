@@ -84,9 +84,9 @@ prepareYear <- function(sT,yearStr) {
 
 }
 
-paramEstimYear <- function(dF,mkPlot=0,yr=1967) {
+paramEstimYear <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
     
-    prepareHazard <- function(hdF,plotcol=4,yr) {
+    prepareHazard <- function(hdF,plotcol=4,yr,regrStart=regrStart) {
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2) 
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
@@ -183,3 +183,4 @@ processingGompertz <- function(mkPlotSlct=1) {
     }
     
 }
+
