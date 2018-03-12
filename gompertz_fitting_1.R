@@ -2,7 +2,7 @@
 #
 # source("gompertz_fitting_1.R")
 #
-#library(ggplot)
+                                        #library(ggplot)
 library(dplyr)
 library(ggplot2)
 
@@ -86,18 +86,18 @@ prepareYear <- function(sT,yearStr) {
 
 paramEstimYear <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
     
-    prepareHazard <- function(hdF,plotcol=4,yr,regrStart=regrStart) {
+    prepareHazard <- function(hdF,plotcol=4,yr,regrStart=50) {
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2) 
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
-        lfm <- lm(log(hx) ~ I(x - 30), data = filter(lxhm, (x >=30)&(x<=90)))
-        lxhmf <- filter(lxhm, (x >= 30)&(x<=90)) %>%  mutate(hf = exp(fitted(lfm)))
+        lfm <- lm(log(hx) ~ I(x - regrStart), data = filter(lxhm, (x >=regrStart)&(x<=90)))
+        lxhmf <- filter(lxhm, (x >= regrStart)&(x<=90)) %>%  mutate(hf = exp(fitted(lfm)))
       
         if (mkPlot==1) {
            plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)",main=paste("Year: ",yr))
-           abline(lfm$coef[1]-30*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
+           abline(lfm$coef[1]-regrStart*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
           # print(length(lfm$resid))
-           plot(31:90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
+           plot((regrStart+1):90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
         }
         list(lxhm=lxhm,lfcoef=lfm$coef,lfres=lfm$resid)  
     }
@@ -109,14 +109,14 @@ paramEstimYear <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
    #     X11(height=10,width=12)
    #     par(mfrow=c(2,2))
    # }
-    yrHM <- prepareHazard(yrM,plotcol=4,yr) ;
-    yrHF <- prepareHazard(yrF,plotcol=2,yr) ;
+    yrHM <- prepareHazard(yrM,plotcol=4,yr,regrStart) ;
+    yrHF <- prepareHazard(yrF,plotcol=2,yr,regrStart) ;
     
     list(yrHM=yrHM,yrHF=yrHF)
 }
 
 
-paramEstimSeriesOfYears <- function(sT,years=1967:2016,mkPlot=0) {
+paramEstimSeriesOfYears <- function(sT,years=1967:2016,mkPlot=0,regrStart=50) {
 
     #years <- 1967:2016 ;
     resM <- matrix(0,nrow=length(years),ncol=5) ; resM[,1] <- years ;
@@ -124,7 +124,7 @@ paramEstimSeriesOfYears <- function(sT,years=1967:2016,mkPlot=0) {
 
     for (yr in 1:length(years)) {
         yearData <- prepareYear(sT,as.character(yr+years[1]-1)) ;
-        pE <- paramEstimYear(yearData) ;
+        pE <- paramEstimYear(yearData,regrStart=regrStart) ;
         resM[yr,2] <- pE$yrHM$lfcoef[1] ;  resM[yr,3] <- pE$yrHM$lfcoef[2] ;
         resM[yr,4] <- pE$yrHF$lfcoef[1] ;  resM[yr,5] <- pE$yrHF$lfcoef[2] ;
         
@@ -146,40 +146,46 @@ plotMortalityParameters <- function(resM) {
     aCoefM25 <- aFitM25$coef ; bCoefM25 <- bFitM25$coef ;
     aCoefF25 <- aFitF25$coef ; bCoefF25 <- bFitF25$coef ;    
 
+  
     X11(width=12,height=7)
     par(mfrow=c(1,2))
-   # X11()
-    plot(resM[,1],resM[,2],col=4,ylim=c(-9,-6.5),xlab="Year",ylab="Basic mortality")
+    #png(filename='gomp_f1.png') ;
+    plot(resM[,1],resM[,2],col=4,ylim=c(-7,-4.5),xlab="Year",ylab="Basic mortality")
     points(resM[,1],resM[,4],col=2)
     abline(aCoefM[1],aCoefM[2],col=4)
     abline(aCoefF[1],aCoefF[2],col=2)
     abline(aCoefM25[1],aCoefM25[2],col=4,lty=3)
     abline(aCoefF25[1],aCoefF25[2],col=2,lty=3)  
-   # X11()
-    plot(resM[,1],resM[,3],col=4,ylim=c(0.09,0.107),xlab="Year",ylab="Aging mortality component")
+  
+    plot(resM[,1],resM[,3],col=4,ylim=c(0.09,0.12),xlab="Year",ylab="Aging mortality component")
     points(resM[,1],resM[,5],col=2)
     abline(bCoefM[1],bCoefM[2],col=4)
     abline(bCoefF[1],bCoefF[2],col=2)
     abline(bCoefM25[1],bCoefM25[2],col=4,lty=3)
-    abline(bCoefF25[1],bCoefF25[2],col=2,lty=3)  
+    abline(bCoefF25[1],bCoefF25[2],col=2,lty=3)
+
+    dev.copy2eps(device=x11,file='gomp_f1.eps') ;
+    #dev.off()
 }
 
 
-processingGompertz <- function(mkPlotSlct=1) {
+processingGompertz <- function(mkPlotSlct=1,regrStart=50) {
 
     sT <- getSurvivalTable()
-    resM <- paramEstimSeriesOfYears(sT,years=1967:2016,mkPlot=0) 
+    resM <- paramEstimSeriesOfYears(sT,years=1967:2016,mkPlot=0,regrStart=regrStart) 
     plotMortalityParameters(resM)
 
     if (mkPlotSlct==1) {
-        X11(height=12,width=12)
-        par(mfrow=c(4,4))
+    
+        X11(height=12,width=12) ; par(mfrow=c(4,4)) ;
+        #png(filename='gomp_f2.png') ;
+        y1967 <- prepareYear(sT,"1967") ;  pE <- paramEstimYear(y1967,mkPlot=1,yr=1967,regrStart=regrStart) ;
+        y1996 <- prepareYear(sT,"1996") ;  pE <- paramEstimYear(y1996,mkPlot=1,yr=1996,regrStart=regrStart) ;
+        y2006 <- prepareYear(sT,"2006") ;  pE <- paramEstimYear(y2006,mkPlot=1,yr=2006,regrStart=regrStart) ;
+        y2006 <- prepareYear(sT,"2016") ;  pE <- paramEstimYear(y2016,mkPlot=1,yr=2016,regrStart=regrStart) ;
 
-        y1967 <- prepareYear(sT,"1967") ;  pE <- paramEstimYear(y1967,mkPlot=1,yr=1967) ;
-        y1996 <- prepareYear(sT,"1996") ;  pE <- paramEstimYear(y1996,mkPlot=1,yr=1996) ;
-        y2006 <- prepareYear(sT,"2006") ;  pE <- paramEstimYear(y2006,mkPlot=1,yr=2006) ;
-        y2006 <- prepareYear(sT,"2016") ;  pE <- paramEstimYear(y2016,mkPlot=1,yr=2016) ;
-        
+        dev.copy2eps(device=x11,file='gomp_f2.eps') ;
+        #dev.off()
     }
     
 }
