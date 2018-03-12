@@ -71,8 +71,8 @@ estimateCoeffSeries <- function(lxDF) {
 }   
 
 #sT <- getSurvivalTable()
-
-
+# y1967 <- prepareYear(sT,"1967")
+# pE <- paramEstimYear(y1967,mkPlot=1) ;
 
 prepareYear <- function(sT,yearStr) {
 
@@ -86,7 +86,7 @@ prepareYear <- function(sT,yearStr) {
 
 paramEstimYear <- function(dF,mkPlot=0) {
     
-    prepareHazard <- function(hdF) {
+    prepareHazard <- function(hdF,plotcol=4) {
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2) 
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
@@ -94,9 +94,8 @@ paramEstimYear <- function(dF,mkPlot=0) {
         lxhmf <- filter(lxhm, (x > 30)&(x<90)) %>%  mutate(hf = exp(fitted(lfm)))
       
         if (mkPlot==1) {
-            X11() ;
-            plot(lxhm$x,log(lxhm$hx))
-
+           plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)")
+           abline(lfm$coef[1]-30*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
         }
         list(lxhm=lxhm,lfcoef=lfm$coef)  
     }
@@ -104,8 +103,13 @@ paramEstimYear <- function(dF,mkPlot=0) {
     
     yrM <- data.frame(dF$age,dF$maleYear) ;  yrF <- data.frame(dF$age,dF$femYear) ;
     names(yrM) <- c("age","lx") ;  names(yrF) <- c("age","lx") ;
-    yrHM <- prepareHazard(yrM) ;
-    yrHF <- prepareHazard(yrF) ;
+    if (mkPlot==1) {
+        X11(height=7,width=12)
+        par(mfrow=c(1,2))
+
+    }
+    yrHM <- prepareHazard(yrM,plotcol=4) ;
+    yrHF <- prepareHazard(yrF,plotcol=2) ;
     
     list(yrHM=yrHM,yrHF=yrHF)
 }
@@ -140,9 +144,6 @@ plotMortalityParameters <- function(resM) {
     aFitF25 <- lm(resM[yrs>1991,4]~resM[yrs>1991,1]) ;    bFitF25 <- lm(resM[yrs>1991,5]~resM[yrs>1991,1])
     aCoefM25 <- aFitM25$coef ; bCoefM25 <- bFitM25$coef ;
     aCoefF25 <- aFitF25$coef ; bCoefF25 <- bFitF25$coef ;    
-
-
-
 
     X11(width=12,height=7)
     par(mfrow=c(1,2))
