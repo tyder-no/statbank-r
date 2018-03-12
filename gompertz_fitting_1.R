@@ -84,9 +84,9 @@ prepareYear <- function(sT,yearStr) {
 
 }
 
-paramEstimYear <- function(dF,mkPlot=0) {
+paramEstimYear <- function(dF,mkPlot=0,yr=1967) {
     
-    prepareHazard <- function(hdF,plotcol=4) {
+    prepareHazard <- function(hdF,plotcol=4,yr) {
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2) 
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
@@ -94,9 +94,9 @@ paramEstimYear <- function(dF,mkPlot=0) {
         lxhmf <- filter(lxhm, (x >= 30)&(x<=90)) %>%  mutate(hf = exp(fitted(lfm)))
       
         if (mkPlot==1) {
-           plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)")
+           plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)",main=paste("Year: ",yr))
            abline(lfm$coef[1]-30*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
-           print(length(lfm$resid))
+          # print(length(lfm$resid))
            plot(31:90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
         }
         list(lxhm=lxhm,lfcoef=lfm$coef,lfres=lfm$resid)  
@@ -105,13 +105,12 @@ paramEstimYear <- function(dF,mkPlot=0) {
     
     yrM <- data.frame(dF$age,dF$maleYear) ;  yrF <- data.frame(dF$age,dF$femYear) ;
     names(yrM) <- c("age","lx") ;  names(yrF) <- c("age","lx") ;
-    if (mkPlot==1) {
-        X11(height=10,width=12)
-        par(mfrow=c(2,2))
-
-    }
-    yrHM <- prepareHazard(yrM,plotcol=4) ;
-    yrHF <- prepareHazard(yrF,plotcol=2) ;
+   # if (mkPlot==1) {
+   #     X11(height=10,width=12)
+   #     par(mfrow=c(2,2))
+   # }
+    yrHM <- prepareHazard(yrM,plotcol=4,yr) ;
+    yrHF <- prepareHazard(yrF,plotcol=2,yr) ;
     
     list(yrHM=yrHM,yrHF=yrHF)
 }
@@ -163,4 +162,24 @@ plotMortalityParameters <- function(resM) {
     abline(bCoefF[1],bCoefF[2],col=2)
     abline(bCoefM25[1],bCoefM25[2],col=4,lty=3)
     abline(bCoefF25[1],bCoefF25[2],col=2,lty=3)  
+}
+
+
+processingGompertz <- function(mkPlotSlct=1) {
+
+    sT <- getSurvivalTable()
+    resM <- paramEstimSeriesOfYears(sT,years=1967:2016,mkPlot=0) 
+    plotMortalityParameters(resM)
+
+    if (mkPlotSlct==1) {
+        X11(height=12,width=12)
+        par(mfrow=c(4,4))
+
+        y1967 <- prepareYear(sT,"1967") ;  pE <- paramEstimYear(y1967,mkPlot=1,yr=1967) ;
+        y1996 <- prepareYear(sT,"1996") ;  pE <- paramEstimYear(y1996,mkPlot=1,yr=1996) ;
+        y2006 <- prepareYear(sT,"2006") ;  pE <- paramEstimYear(y2006,mkPlot=1,yr=2006) ;
+        y2006 <- prepareYear(sT,"2016") ;  pE <- paramEstimYear(y2016,mkPlot=1,yr=2016) ;
+        
+    }
+    
 }
