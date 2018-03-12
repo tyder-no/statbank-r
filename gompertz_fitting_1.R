@@ -90,22 +90,24 @@ paramEstimYear <- function(dF,mkPlot=0) {
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2) 
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
-        lfm <- lm(log(hx) ~ I(x - 30), data = filter(lxhm, (x > 30)&(x<90)))
-        lxhmf <- filter(lxhm, (x > 30)&(x<90)) %>%  mutate(hf = exp(fitted(lfm)))
+        lfm <- lm(log(hx) ~ I(x - 30), data = filter(lxhm, (x >=30)&(x<=90)))
+        lxhmf <- filter(lxhm, (x >= 30)&(x<=90)) %>%  mutate(hf = exp(fitted(lfm)))
       
         if (mkPlot==1) {
            plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)")
            abline(lfm$coef[1]-30*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
+           print(length(lfm$resid))
+           plot(31:90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
         }
-        list(lxhm=lxhm,lfcoef=lfm$coef)  
+        list(lxhm=lxhm,lfcoef=lfm$coef,lfres=lfm$resid)  
     }
     
     
     yrM <- data.frame(dF$age,dF$maleYear) ;  yrF <- data.frame(dF$age,dF$femYear) ;
     names(yrM) <- c("age","lx") ;  names(yrF) <- c("age","lx") ;
     if (mkPlot==1) {
-        X11(height=7,width=12)
-        par(mfrow=c(1,2))
+        X11(height=10,width=12)
+        par(mfrow=c(2,2))
 
     }
     yrHM <- prepareHazard(yrM,plotcol=4) ;
