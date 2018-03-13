@@ -1,4 +1,5 @@
-#
+options(encoding="UTF-8")
+                                        #
 #
 # source("generalized_gompertz_1.R")
 #
@@ -30,35 +31,49 @@ prepareYear <- function(sT,yearStr) {
 
 }
 
+
 paramEstimYear2 <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
     
     prepareHazard <- function(hdF,plotcol=4,yr,regrStart=50,plotNum=1) {
+
+        fitted <- function(x0,para) { para[2]*x0^para[1] + (para[1]-1)*log(x0) + para[3] }
+        
+        sSG3 <- function(para){sqrSumGomp3(para)}
+
+        sqrSumGomp3 <- function(para,loghx=loghx0,x=x0) {
+            a <- para[1] ; b <- para[2] ; c <- para[3] ;
+            sum((loghx - b*x^a - (a-1)*log(x) - c)^2)
+        }
+
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2)
         alpha <- 1.3 ;
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
-     #   lfm <- lm(log(hx) ~ I(x - regrStart) + log(x), data = filter(lxhm, (x >=regrStart)&(x<=90)))
-         lfm <- lm(log(hx) ~ I((x - regrStart)^alpha) + log(x), data = filter(lxhm, (x >=regrStart)&(x<=90)))
+        lxhm0  = filter(lxhm, (x >= regrStart) & (x<=90))
         
-        lxhmf <- filter(lxhm, (x >= regrStart)&(x<=90)) %>%  mutate(hf = exp(fitted(lfm)))
-      
+        x0 <- lxhm0$x ; loghx0 <- log(lxhm0$hx) ;
+        
+        lfm <-nlm(sSG3,c(1.2,0.07,-7),hessian=T)
+
+        resid <- loghx0 - fitted(x0,lfm$estimate)
+          
         if (mkPlot==1) {
-           if (plotNum==1) mainTitle <- paste("Year: ",yr) else mainTitle <- " " ;
-           plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)",main=mainTitle)
-          # abline(lfm$coef[1]-regrStart*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
-          # print(length(lfm$resid))
-           plot((regrStart+1):90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
+            if (plotNum==1) mainTitle <- paste("Year: ",yr) else mainTitle <- " " ;
+            plot(lxhm$x,log(lxhm$hx),ylim=c(-11,0),col=plotcol,xlab="Age x",ylab="log(h(x)",main=mainTitle)
+                                        # abline(lfm$coef[1]-regrStart*lfm$coef[2],lfm$coef[2],col=plotcol,lty=4)
+                                        # print(length(lfm$resid))
+            plot((regrStart+1):90,lfm$resid,ylim=c(-0.7,0.7),col=plotcol,xlab="Age x",ylab="Residuals of log(h(x)")
         }
-        list(lxhm=lxhm,lfcoef=lfm$coef,lfres=lfm$resid)  
+        list(lxhm=lxhm,lfcoef=lfm$estimate,lfres=resid)  
     }
     
     
     yrM <- data.frame(dF$age,dF$maleYear) ;  yrF <- data.frame(dF$age,dF$femYear) ;
     names(yrM) <- c("age","lx") ;  names(yrF) <- c("age","lx") ;
-   # if (mkPlot==1) {
-   #     X11(height=10,width=12)
-   #     par(mfrow=c(2,2))
-   # }
+                                        # if (mkPlot==1) {
+                                        #     X11(height=10,width=12)
+                                        #     par(mfrow=c(2,2))
+                                        # }
     yrHM <- prepareHazard(yrM,plotcol=4,yr,regrStart,plotNum=1) ;
     yrHF <- prepareHazard(yrF,plotcol=2,yr,regrStart,plotNum=2) ;
     
