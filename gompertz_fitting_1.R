@@ -117,7 +117,7 @@ paramEstimYear <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
 }
 
 
-paramEstimSeriesOfYears <- function(sT,years=1967:2016,mkPlot=0,regrStart=50) {
+paramEstimSeriesOfYears <- function(sT,years=1967:2017,mkPlot=0,regrStart=50) {
 
     #years <- 1967:2016 ;
     resM <- matrix(0,nrow=length(years),ncol=5) ; resM[,1] <- years ;
@@ -175,8 +175,8 @@ plotMortalityParameters <- function(resM) {
 
 processingGompertz <- function(mkPlotSlct=1,regrStart=50) {
 
-    sT <- getSurvivalTable()
-    resM <- paramEstimSeriesOfYears(sT,years=1967:2016,mkPlot=0,regrStart=regrStart) 
+   # sT <- getSurvivalTable()
+    resM <- paramEstimSeriesOfYears(sT,years=1967:2017,mkPlot=0,regrStart=regrStart) 
     plotMortalityParameters(resM)
 
     if (mkPlotSlct==1) {
@@ -184,9 +184,9 @@ processingGompertz <- function(mkPlotSlct=1,regrStart=50) {
         X11(height=12,width=12) ; par(mfrow=c(4,4)) ;
         #png(filename='gomp_f2.png') ;  # Doesn't work well with png here
         y1967 <- prepareYear(sT,"1967") ;  pE <- paramEstimYear(y1967,mkPlot=1,yr=1967,regrStart=regrStart) ;
-        y1996 <- prepareYear(sT,"1996") ;  pE <- paramEstimYear(y1996,mkPlot=1,yr=1996,regrStart=regrStart) ;
-        y2006 <- prepareYear(sT,"2006") ;  pE <- paramEstimYear(y2006,mkPlot=1,yr=2006,regrStart=regrStart) ;
-        y2006 <- prepareYear(sT,"2016") ;  pE <- paramEstimYear(y2016,mkPlot=1,yr=2016,regrStart=regrStart) ;
+        y1997 <- prepareYear(sT,"1997") ;  pE <- paramEstimYear(y1997,mkPlot=1,yr=1997,regrStart=regrStart) ;
+        y2007 <- prepareYear(sT,"2007") ;  pE <- paramEstimYear(y2007,mkPlot=1,yr=2007,regrStart=regrStart) ;
+        y2017 <- prepareYear(sT,"2017") ;  pE <- paramEstimYear(y2017,mkPlot=1,yr=2017,regrStart=regrStart) ;
 
         dev.copy2eps(device=x11,file='gomp_f2.eps') ;
         #dev.off()
