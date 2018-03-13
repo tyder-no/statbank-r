@@ -14,6 +14,17 @@ source("ssb_mortality_table_testing.R")
 
 graphics.off()
 
+
+saveAsRExpression <- function(dFrame,fileName,saveDir="../data/") {
+    dput(dFrame,paste(saveDir,fileName,".txt",sep=""))
+}
+
+loadRExpression <- function(fileName,saveDir="../data/") {
+    dget(paste(saveDir,fileName,".txt",sep=""))
+}
+
+
+
 midpoints <- function(x) (x[-1] + x[-length(x)])/2
 
 
@@ -31,6 +42,27 @@ prepareYear <- function(sT,yearStr) {
 
 }
 
+prepareYearMF <- function(sT,yearStr) {
+
+    femYear <- sT[sT$Kjonn==2,yearStr] ;
+    maleYear <- sT[sT$Kjonn==1,yearStr] ; 
+    age <- 0:106 ;
+
+    yrM <- data.frame(age,maleYear) ;  yrF <- data.frame(age,femYear) ;
+    names(yrM) <- c("age","lx") ;  names(yrF) <- c("age","lx") ;
+    list(yrM=yrM,yrF=yrF)
+
+}
+
+
+prepareHx <- function(hdF) {
+    hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2)
+    lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
+    data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
+}
+
+
+
 
 paramEstimYear2 <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
     
@@ -46,7 +78,6 @@ paramEstimYear2 <- function(dF,mkPlot=0,yr=1967,regrStart=50) {
         }
 
         hdF$lx <- ifelse(hdF$lx>0,hdF$lx,2)
-        alpha <- 1.3 ;
         lxm <- mutate(hdF, lx = lx/100000, Hx = -log(lx)) ;
         lxhm <- data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
         lxhm0  = filter(lxhm, (x >= regrStart) & (x<=90))
