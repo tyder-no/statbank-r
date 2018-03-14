@@ -61,6 +61,42 @@ prepareHx <- function(hdF) {
     data.frame(hx = diff(lxm$Hx), x = midpoints(lxm$age))
 }
 
+prepareYearMFHx <- function(sT,yearStr) {
+
+    yearMF <- prepareYearMF(sT,yearStr)
+    hxF <- prepareHx(yearMF$yrF) ;
+    hxM <- prepareHx(yearMF$yrM) ;
+   
+    list(hxM=hxM,hxF=hxF)
+
+}
+
+
+estimGompertz3Parm <- function(hxMF) {
+
+    fitted <- function(x0,para) { para[2]*x0^para[1] + (para[1]-1)*log(x0) + para[3] }
+    
+    sSG3 <- function(para){sqrSumGomp3(para)}
+
+    sqrSumGomp3 <- function(para,loghx=loghx0,x=x0) {
+        a <- para[1] ; b <- para[2] ; c <- para[3] ;
+        sum((loghx - b*x^a - (a-1)*log(x) - c)^2)
+    }
+
+    
+    hxhm0  = filter(hxMF$hxM, (x >= regrStart) & (x<=90))
+    x0 <- hxhm0$x ; loghx0 <- log(hxhm0$hx) ;
+    hfm <-nlm(sSG3,c(1.2,0.07,-7),hessian=T)
+    residm <- loghx0 - fitted(x0,hfm$estimate)
+
+    
+    hxhf0  = filter(hxMF$hxF, (x >= regrStart) & (x<=90))
+    x0 <- hxhf0$x ; loghx0 <- log(hxhf0$hx) ;
+    hff <-nlm(sSG3,c(1.2,0.07,-7),hessian=T)
+    residf <- loghx0 - fitted(x0,hff$estimate)
+  
+    list(hfm=hfm,residm=residm,hff=hff,residf=residf) 
+}
 
 
 
@@ -167,4 +203,21 @@ processingGompertz2 <- function(sT,mkPlotSlct=1,regrStart=50) {
     }
     
 }
+
+#> x <- 30:105
+#> p3 <- g3p2017$hff$estimate
+#> y <- p3[2]*x^p3[1]+(p3[1]-1)*log(x)+p3[3]
+#> plot(x,y)
+#> q3 <- g3p2017$hfm$estimate
+#> y2 <- q3[2]*x^q3[1]+(q3[1]-1)*log(x)+q3[3]
+#> points(x,y2,col=4)
+#> hxMF1967 <- prepareYearMFHx(sT,"1967")
+#> g3p1967 <- estimGompertz3Parm(hxMF1967)
+#> p3 <- g3p1967$hff$estimate
+#>  y3 <- p3[2]*x^p3[1]+(p3[1]-1)*log(x)+p3[3]
+#>  points(x,y3,pch=2,col=2)
+#> q3 <- g3p1967$hfm$estimate
+#>  y4 <- q3[2]*x^q3[1]+(q3[1]-1)*log(x)+q3[3]
+#>  points(x,y4,pch=2,col=4)
+
 

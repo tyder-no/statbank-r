@@ -5,6 +5,7 @@
                                         #library(ggplot)
 library(dplyr)
 library(ggplot2)
+library(flexsurv)
 
 source("ssb-json-functions.R")
 source("ssb_mortality_table_testing.R")
@@ -168,7 +169,9 @@ plotMortalityParameters <- function(resM) {
     abline(bCoefF25[1],bCoefF25[2],col=2,lty=3)
 
     dev.copy2eps(device=x11,file='gomp_f1.eps') ;
-    #dev.off()
+                                        #dev.off()
+    c(aCoefM25[1],aCoefM25[2],aCoefF25[1],aCoefF25[2],bCoefM25[1],bCoefM25[2],bCoefF25[1],bCoefF25[2])
+    
 }
 
 
@@ -177,7 +180,7 @@ processingGompertz <- function(mkPlotSlct=1,regrStart=50) {
 
    # sT <- getSurvivalTable()
     resM <- paramEstimSeriesOfYears(sT,years=1967:2017,mkPlot=0,regrStart=regrStart) 
-    plotMortalityParameters(resM)
+    regrC <- plotMortalityParameters(resM)
 
     if (mkPlotSlct==1) {
     
@@ -191,6 +194,27 @@ processingGompertz <- function(mkPlotSlct=1,regrStart=50) {
         dev.copy2eps(device=x11,file='gomp_f2.eps') ;
         #dev.off()
     }
+    list(regrC=regrC,resM=resM)
+}
+
+
+extraPolDraw <- function(rC,yr,N=100000,regrStart=50)  {
+
+    aM <- rC[1] + rC[2]*yr ;  bM <- rC[5] + rC[6]*yr ;
+    rgM <-  regrStart + rgompertz(N,bM,exp(aM))
+    aF <- rC[3] + rC[4]*yr ;  bF <- rC[7] + rC[8]*yr ;
+    rgF <- regrStart + rgompertz(N,bF,exp(aF))
+    list(parm=c(aM,bM,aF,bF), rgM=rgM,rgF=rgF)
     
 }
 
+
+#> surv2040 <- extraPolDraw( rC,2040)
+#> c(mean(surv2040$rgM), mean(surv2040$rgF))
+#[1] 87.09236 89.24088
+#> surv2060 <- extraPolDraw( rC,2060)
+#> c( mean(surv2060$rgM), mean(surv2060$rgF))
+#[1] 91.11062 92.34628
+#> surv2017 <- extraPolDraw( rC,2017)
+#>  c( mean(surv2017$rgM), mean(surv2017$rgF))
+#[1] 82.30068 85.74297  vs expected 80.9  84.3
