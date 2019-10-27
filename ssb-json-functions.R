@@ -21,6 +21,7 @@ library(reshape)
 #
 #
 
+# Fetches the meta data for a table, with number tableId, as a JSON structure
 
 getMetaData <- function(tableId) {
   getUrl <- paste("http://data.ssb.no/api/v0/no/table/",tableId,sep="")
@@ -28,34 +29,68 @@ getMetaData <- function(tableId) {
   content(d.tmp,"text")
 }
 
-# getRawJSONData - Henter SB-data vha POST-kall
-# Parametre 
-#  tableId: Nummer  SB-tabellen
-#  queryData: JSON-formatert query 
+# getRawJSONData - Fetches SB-data by POST-request
+# Parameters 
+#  tableId: Number  SB-table
+#  queryData: JSON-formatted query 
 #
 
 getRawJSONData <- function(tableId,queryData) {
-# query-oppslaget med POST
+#  POST query request
    d.tmp <- POST(paste("http://data.ssb.no/api/v0/no/table/",tableId,sep=""), body = queryData, encode = "json", verbose())
-# Henter ut innholdet fra d.tmp som tekst
+# Returns contents of d.tmp as JSON-formatted text 
    content(d.tmp, "text")
 }
 
 
-# getJSONData - Henter SB-data vha POST-kall tjenesten. Returnerer en tabell for videre bearbeiding
-# Parametre 
-#  tableId: Nummer SB-tabellen
-#  queryData: JSON-formatert query 
-#  naming: To aktuelle verdier: id - gir koding og variabelnavn, label - gir label-tekstene
+# getJSONData - Fetches SB-data by POST-request. Returns a data table for further processing
+# Parameters 
+#  tableId: Number  SB-table
+#  queryData: JSON-formatted query 
+#  naming: Two relevant values: id - coding and variable names, label - the label-texts
 #
 
 getJSONData <- function(tableId,queryData,naming="id") {
-# Henter ut innholdet  bearbeides av fromJSONstat
-   sbtabell <- fromJSONstat(getRawJSONData(tableId,queryData),naming=naming)
-# Henter ut kun datasettet fra sbtabell
-   ds <- sbtabell[[1]]
-# Returnerer datasettet
+# Fetches the content processed by fromJSONstat
+   sbtable <- fromJSONstat(getRawJSONData(tableId,queryData),naming=naming)
+# Only dataset is used from sbtable and returned
+   ds <- sbtable[[1]]
    ds
+}
+
+
+#
+##########################################################
+####### Handling metadata, creating queries  #############
+########################################################## 
+
+
+
+
+# JSON metadata table structure w/no subtable converted to dataframe by jsonlite
+# Suitable for further processing, may e.g. be stored
+# Parameter tableId: Number SB-table
+
+getRMetaDataFrame <- function(tableId) {
+    mDF <- fromJSON(getMetaData(tableId))
+    mDF
+}
+
+
+
+# From metadata data frame
+# Adds column "Slct" for selection marking
+# Parameter tableId: Number SB-table
+
+getDFValuesAndLabels <- function(mDF) {
+    varNms <- mDF[[2]][[1]]  ; varLbls <- mDF[[2]][[1]] ; varNmb <- length(varNms) ;
+    valAndLbl <- list()
+    for (i in 1:varNmb) {
+        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i],0)
+        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""),"Slct")
+        valAndLbl[[varNms[i]]] <- xdfi
+    }
+    valAndLbl
 }
 
 
@@ -76,28 +111,10 @@ getValuesAndLabels <- function(tableId) {
 }
 
 
-
-
-# From JSON metadata structure converted to dataframe by jsonlite
-
-getValuesAndLabels <- function(tableId) {
-    
-    mDF <- fromJSON(getMetaData(tableId))
-    varNms <- mDF[[2]][[1]]  ; varLbls <- mDF[[2]][[1]] ; varNmb <- length(varNms) ;
-    valAndLbl <- list()
-    for (i in 1:varNmb) {
-        
-        xdfi <- data.frame(mDF[[2]][3][[1]][i],  mDF[[2]][4][[1]][i],0)
-        names(xdfi) <- c(varNms[i],paste(varNms[i],"Label",sep=""),"Slct")
-        valAndLbl[[varNms[i]]] <- xdfi
-        
-    }
-    
-     valAndLbl
-    
-}
-
 # 
+#  Creates search data frame from marked-up meta data frame metaDF 
+#
+#
 
 createSearchDF <- function(metaDF){
 
@@ -146,7 +163,7 @@ createSearchDF <- function(metaDF){
 
 
 # Patch the generated query by removing the last [] pair
-# This way, we can create a correct query from a data frame (really list/fram hybrid) we generate
+# This way, we can create a correct query from a data frame (really list/frame hybrid) we generate
 
 queryFromDF <- function(df){
 
@@ -172,15 +189,9 @@ createSearchFromDF <- function(markedValueLabelsDF){
 
 
 
-
-
-
-#
-##########################################################
-########## Transformations on SSB table data #############
-########################################################## 
-
+# Queries for SSB statbank - structure
 # Dummy query for new query generation - just  to have enough variables
+# This gets rewritten
 
 getQueryData99999 <- function() {
     '{
